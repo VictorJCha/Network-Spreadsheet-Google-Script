@@ -129,6 +129,7 @@ function switchToCredentialsSheet() {
  *   - AABB.CCDD.EEFF (Cisco-style)
  *   - Any of the above with 4 extra hex chars on the end (UID): ...YYYY
  * - Always rewrites to: AA:BB:CC:DD:EE:FF (uppercase, colons)
+ * - Copies background color from cell to the left, includes checks in case its in column A and there are no columns to the left
  * - On invalid input:
  *   - Revert to previous value
  *   - Highlight cell red
@@ -137,92 +138,71 @@ function switchToCredentialsSheet() {
 function handleMacAddressEdit_(e) {
   const range = e.range;
   const sheet = range.getSheet();
-  const row = range.getRow();
-  const col = range.getColumn();
 
-  // Skip all sheets whose tab name contains "csv"
+  // Skip sheets whose tab name contains "csv"
   if (sheet.getName().toLowerCase().includes("csv")) return;
 
-  // Only handle single-cell edits
-  if (range.getNumRows() !== 1 || range.getNumColumns() !== 1) return;
-
   const HEADER_ROW = 1;
-  if (row === HEADER_ROW) return; // Ignore header row
-
   const lastCol = sheet.getLastColumn();
   if (lastCol === 0) return;
 
   const headers = sheet.getRange(HEADER_ROW, 1, 1, lastCol).getValues()[0];
-  const macHeaderIndex = headers.indexOf("MAC Address"); // exact header match
-  if (macHeaderIndex === -1) return; // Sheet doesn't have "MAC Address" column
+  const macColIndex = headers.indexOf("MAC Address"); // exact header match
+  if (macColIndex === -1) return;
 
-  const macCol = macHeaderIndex + 1; // convert index (0-based) to col number (1-based)
-  if (col !== macCol) return; // Not in the MAC Address column
+  const macCol = macColIndex + 1; // convert 0-based index to column number
 
-  // New value as typed by the user
-  const newValue = e.value;
-  const oldValue = typeof e.oldValue !== 'undefined' ? e.oldValue : '';
+  // Only process edits in the MAC Address column
+  if (range.getColumn() !== macCol) return;
 
-  // If user cleared the cell, just reset background and exit
-  if (newValue === undefined || newValue === null || newValue === "") {
-    range.setBackground(null);
-    return;
+  // Get all values in the edited range (2D array)
+  const values = range.getValues();
+  const oldValues = range.getOldValues ? range.getOldValues() : values; // optional fallback
+
+  for (let r = 0; r < values.length; r++) {
+    for (let c = 0; c < values[r].length; c++) {
+      const cell = range.getCell(r + 1, c + 1);
+      let val = values[r][c];
+
+      // Empty cell: reset background and continue
+      if (!val) {
+        cell.setValue("");
+        cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
+        continue;
+      }
+
+      // Normalize: uppercase and remove all separators/spaces
+      val = val.toString().toUpperCase().replace(/[:\-\.\s]/g, "");
+
+      // Validate: 12 hex (MAC) or 16 hex (UID)
+      const isMac12 = /^[0-9A-F]{12}$/.test(val);
+      const isUid16 = /^[0-9A-F]{16}$/.test(val);
+
+      if (!isMac12 && !isUid16) {
+        const oldValue = oldValues[r][c] || "";
+        cell.setValue(oldValue);
+        cell.setBackground('#ffcccc');
+        SpreadsheetApp.getActive().toast(
+          "Invalid MAC/UID in '" + sheet.getName() +
+          "' — expected 12 or 16 hex characters.",
+          "MAC Address Validation",
+          5
+        );
+        continue;
+      }
+
+      // Take first 12 chars for MAC portion
+      const macHex = val.substring(0, 12);
+      const octets = macHex.match(/.{2}/g);
+      if (!octets) continue;
+
+      const formattedMac = octets.join(":");
+
+      // Write normalized MAC back and copy background from left cell if not column A
+      cell.setValue(formattedMac);
+      cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
+    }
   }
-
-  const upper = newValue.toString().toUpperCase().trim();
-  if (!upper) {
-    range.setValue("");
-    range.setBackground(null);
-    return;
-  }
-
-  // Remove common separators: colons, dashes, dots, and spaces.
-  // This supports:
-  // - AA:BB:CC:DD:EE:FF
-  // - AA-BB-CC-DD-EE-FF
-  // - AABB.CCDD.EEFF (Cisco-style)
-  // - "AA BB CC DD EE FF"
-  const base = upper.replace(/[:\-\.\s]/g, "");
-
-  // base should now be:
-  // - 12 hex chars (MAC), or
-  // - 16 hex chars (UID: MAC + 4 extra)
-  const isMac12 = /^[0-9A-F]{12}$/.test(base);
-  const isUid16 = /^[0-9A-F]{16}$/.test(base);
-
-  if (!isMac12 && !isUid16) {
-    // Invalid input: revert, highlight, and notify
-    range.setValue(oldValue);
-    range.setBackground('#ffcccc'); // light red
-    SpreadsheetApp.getActive().toast(
-      "Invalid MAC/UID in '" + sheet.getName() + "' — expected 12 or 16 hex characters (after separators).",
-      "MAC Address Validation",
-      5
-    );
-    return;
-  }
-
-  // Take only the first 12 characters (MAC portion), dropping UID suffix if present
-  const macHex = base.substring(0, 12);
-
-  // Split into 6 octets of 2 chars
-  const octets = macHex.match(/.{2}/g);
-  if (!octets || octets.length !== 6) {
-    range.setValue(oldValue);
-    range.setBackground('#ffcccc');
-    SpreadsheetApp.getActive().toast(
-      "Invalid MAC format derived from input.",
-      "MAC Address Validation",
-      5
-    );
-    return;
-  }
-
-  const formattedMac = octets.join(":"); // AA:BB:CC:DD:EE:FF
-
-  // Write back normalized MAC (uppercase, colon-separated) and clear any error background
-  range.setValue(formattedMac);
-  // range.setBackground(null);
 }
 
 /**
@@ -231,6 +211,11 @@ function handleMacAddressEdit_(e) {
  * - Converts to MAC (first 12 chars)
  * - Formats MAC as AA:BB:CC:DD:EE:FF
  * - Writes result to the MAC Address column (same row)
+ * - Copies background color from cell to the left, includes checks in case its in column A and there are no columns to the left
+ * - On invalid input:
+ *   - Revert to previous value
+ *   - Highlight cell red
+ *   - Show toast
  */
 function handleSavantUidEdit_(e) {
   const range = e.range;
