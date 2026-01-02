@@ -179,8 +179,7 @@ function handleMacAddressEdit_(e) {
       const isUid16 = /^[0-9A-F]{16}$/.test(val);
 
       if (!isMac12 && !isUid16) {
-        const oldValue = oldValues[r][c] || "";
-        cell.setValue(oldValue);
+        cell.setValue(null);
         cell.setBackground('#ffcccc');
         SpreadsheetApp.getActive().toast(
           "Invalid MAC/UID in '" + sheet.getName() +
