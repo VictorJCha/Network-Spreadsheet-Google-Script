@@ -284,8 +284,13 @@ function handleSavantUidEdit_(e) {
 
       const formattedMac = octets.join(":");
 
-      // Write formatted MAC to MAC Address column in same row
-      sheet.getRange(range.getRow() + r, macCol).setValue(formattedMac);
+      // Write formatted MAC to MAC Address column in same row and change color of the cell
+      const macCell = sheet.getRange(range.getRow() + r, macCol);
+
+      macCell.setValue(formattedMac);
+      macCell.getColumn() > 1 &&
+      macCell.setBackground(macCell.offset(0, -1).getBackground());
+
     }
   }
 }
