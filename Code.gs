@@ -163,7 +163,6 @@ function handleMacAddressEdit_(e) {
   const newValue = e.value;
   const oldValue = typeof e.oldValue !== 'undefined' ? e.oldValue : '';
 
-  // VC - I am commenting out the section below because it unintentionally clears the color of a cell when you delete a mac address
   // If user cleared the cell, just reset background and exit
   if (newValue === undefined || newValue === null || newValue === "") {
     range.setBackground(null);
