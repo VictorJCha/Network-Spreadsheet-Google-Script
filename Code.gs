@@ -261,14 +261,21 @@ function handleSavantUidEdit_(e) {
       let uid = values[r][c];
       const cell = range.getCell(r + 1, c + 1);
 
+      //if (!uid) {
+      //  cell.setBackground(null); // reset background if empty
+      //  continue;
+      //}
+
       if (!uid) {
-        cell.setBackground(null); // reset background if empty
+        //Changes cell value to match neighboring cell, does nothing if there is no cell to the left of it
+        cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
         continue;
       }
 
       // Auto-capitalize and remove invalid characters
       uid = uid.toString().toUpperCase().replace(/[^0-9A-F]/g, "");
       cell.setValue(uid); // overwrite with cleaned UID
+      cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground()); // Update cell color to match row
 
       // Validate 16-character hex UID
       if (!/^[0-9A-F]{16}$/.test(uid)) {
