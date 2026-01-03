@@ -166,8 +166,17 @@ function handleMacAddressEdit_(e) {
 
       // Empty cell: reset background and continue
       if (!val) {
-        cell.setValue("");
-        cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
+        clearCellAndMatchRow_(cell);
+
+        // Clear UID partner cell
+        const uidCol = headers.findIndex(h =>
+          h.toString().toLowerCase().includes("savant uid")
+        ) + 1;
+
+        if (uidCol > 0) {
+          clearCellAndMatchRow_(sheet.getRange(cell.getRow(), uidCol));
+        }
+
         continue;
       }
 
@@ -251,8 +260,11 @@ function handleSavantUidEdit_(e) {
       //}
 
       if (!uid) {
-        //Changes cell value to match neighboring cell, does nothing if there is no cell to the left of it
-        cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
+        clearCellAndMatchRow_(cell);
+
+        // Clear MAC partner cell
+        clearCellAndMatchRow_(sheet.getRange(cell.getRow(), macCol));
+
         continue;
       }
 
@@ -293,6 +305,15 @@ function handleSavantUidEdit_(e) {
 
     }
   }
+}
+
+// ================== CELL CLEANER AND COLOR MATCH HELPER ==================
+
+// Used by MAC and UID function to Clear partner cell and set background color
+function clearCellAndMatchRow_(cell) {
+  cell.setValue("");
+  cell.getColumn() > 1 &&
+    cell.setBackground(cell.offset(0, -1).getBackground());
 }
 
 // ================== DHCP EXPORT MENU HANDLERS ==================
