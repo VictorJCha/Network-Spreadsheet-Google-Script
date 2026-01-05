@@ -139,6 +139,8 @@ function handleMacAddressEdit_(e) {
   const range = e.range;
   const sheet = range.getSheet();
 
+  if (range.getRow() <= 2) return;
+
   // Skip sheets whose tab name contains "csv"
   if (sheet.getName().toLowerCase().includes("csv")) return;
 
@@ -228,6 +230,8 @@ function handleMacAddressEdit_(e) {
 function handleSavantUidEdit_(e) {
   const range = e.range;
   const sheet = range.getSheet();
+
+  if (range.getRow() <= 2) return;
 
   // Skip sheets with "csv" in the tab name
   if (sheet.getName().toLowerCase().includes("csv")) return;
