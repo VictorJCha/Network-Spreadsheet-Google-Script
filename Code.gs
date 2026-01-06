@@ -209,6 +209,7 @@ function handleMacAddressEdit_(e) {
       const formattedMac = octets.join(":");
 
       // Write normalized MAC back and copy background from left cell if not column A
+      cell.setFontColor("#000000");
       cell.setValue(formattedMac);
       cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
     }
@@ -274,6 +275,7 @@ function handleSavantUidEdit_(e) {
 
       // Auto-capitalize and remove invalid characters
       uid = uid.toString().toUpperCase().replace(/[^0-9A-F]/g, "");
+      cell.setFontColor("#000000");
       cell.setValue(uid); // overwrite with cleaned UID
       cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground()); // Update cell color to match row
 
@@ -303,6 +305,7 @@ function handleSavantUidEdit_(e) {
       // Write formatted MAC to MAC Address column in same row and change color of the cell
       const macCell = sheet.getRange(range.getRow() + r, macCol);
 
+      macCell.setFontColor("#000000");
       macCell.setValue(formattedMac);
       macCell.getColumn() > 1 &&
       macCell.setBackground(macCell.offset(0, -1).getBackground());
