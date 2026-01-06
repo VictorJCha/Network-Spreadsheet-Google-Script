@@ -107,7 +107,7 @@ function onEdit(e) {
   handleSavantUidEdit_(e);
 }
 
-// Switch the active sheet to "Credentials"
+// Switch the active sheet to "Credentials" used by PasswordPrompt.html
 function switchToCredentialsSheet() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Credentials");
   if (sheet) {
