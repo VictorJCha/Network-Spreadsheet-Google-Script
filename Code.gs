@@ -25,8 +25,7 @@ function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
 
   // ----- Custom Tools menu -----
-  // ----- Custom Tools menu -----
-ui.createMenu('Tools')
+ui.createMenu('Cantara Tools')
   .addItem('Create Password', 'openPasswordGenerator')
   .addSeparator()
   .addSubMenu(
@@ -38,9 +37,8 @@ ui.createMenu('Tools')
       .addItem('Export All VLANs', 'exportDhcpAllVlans')
   )
   .addToUi();
-// ------------------------------
 
-  // ------------------------------
+// Opens prompt if page flip to Credentials tab hasn't been activated
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PASSWORD_SHEET_NAME);
   if (!sheet) return;
@@ -55,6 +53,7 @@ ui.createMenu('Tools')
   }
 }
 
+// Opens Password Generator in a new tab
 function openPasswordGenerator() {
   const template = HtmlService.createTemplate(`
     <!DOCTYPE html>
@@ -129,6 +128,7 @@ function switchToCredentialsSheet() {
  *   - AABB.CCDD.EEFF (Cisco-style)
  *   - Any of the above with 4 extra hex chars on the end (UID): ...YYYY
  * - Always rewrites to: AA:BB:CC:DD:EE:FF (uppercase, colons)
+ * - Sets font to Black
  * - Copies background color from cell to the left, includes checks in case its in column A and there are no columns to the left
  * - On invalid input:
  *   - Revert to previous value
@@ -208,7 +208,7 @@ function handleMacAddressEdit_(e) {
 
       const formattedMac = octets.join(":");
 
-      // Write normalized MAC back and copy background from left cell if not column A
+      // Write normalized MAC back, set font to black, and set and copy background from left cell if not column A
       cell.setFontColor("#000000");
       cell.setValue(formattedMac);
       cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
@@ -222,7 +222,8 @@ function handleMacAddressEdit_(e) {
  * - Converts to MAC (first 12 chars)
  * - Formats MAC as AA:BB:CC:DD:EE:FF
  * - Writes result to the MAC Address column (same row)
- * - Copies background color from cell to the left, includes checks in case its in column A and there are no columns to the left
+ * - Sets font to Black for UID & MAC
+ * - Copies background color from cell to the left, includes checks in case its in column A and there are no columns to the left (for UID & MAC)
  * - On invalid input:
  *   - Revert to previous value
  *   - Highlight cell red
@@ -275,7 +276,7 @@ function handleSavantUidEdit_(e) {
 
       // Auto-capitalize and remove invalid characters
       uid = uid.toString().toUpperCase().replace(/[^0-9A-F]/g, "");
-      cell.setFontColor("#000000");
+      cell.setFontColor("#000000"); // set font to black
       cell.setValue(uid); // overwrite with cleaned UID
       cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground()); // Update cell color to match row
 
