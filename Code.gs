@@ -93,13 +93,10 @@ function onEdit(e) {
 
   // Password gate: if password is empty and we're not editing the password cell, block the edit
   if (!passwordValue && !(editedSheet.getName() === PASSWORD_SHEET_NAME && editedCell === PASSWORD_CELL)) {
-    const html = HtmlService.createHtmlOutputFromFile('PasswordPrompt')
-      .setWidth(360)
-      .setHeight(300);
-    SpreadsheetApp.getUi().showModalDialog(html, 'Site Admin Password Required');
-    editedRange.setValue(''); // Clear unauthorized input
-    return;
-  }
+   SpreadsheetApp.getUi().alert('Password Required!', 'Please Create a Password Using the "Cantara Tools" Menu Item', SpreadsheetApp.getUi().ButtonSet.OK);
+   editedRange.setValue('');
+  return;
+}
 
   // If we get here, password is present OR we're editing the password cell itself.
   // Apply MAC/UID normalization where appropriate.
