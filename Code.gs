@@ -205,10 +205,9 @@ function handleMacAddressEdit_(e) {
 
       const formattedMac = octets.join(":");
 
-      // Write normalized MAC back, set font to black, and set and copy background from left cell if not column A
-      cell.setFontColor("#000000");
+      // Write normalized MAC back, and format the input
       cell.setValue(formattedMac);
-      cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground());
+      normalizeCell(cell, true);
     }
   }
 }
@@ -257,11 +256,6 @@ function handleSavantUidEdit_(e) {
       let uid = values[r][c];
       const cell = range.getCell(r + 1, c + 1);
 
-      //if (!uid) {
-      //  cell.setBackground(null); // reset background if empty
-      //  continue;
-      //}
-
       if (!uid) {
         clearCellAndMatchRow_(cell);
 
@@ -271,11 +265,10 @@ function handleSavantUidEdit_(e) {
         continue;
       }
 
-      // Auto-capitalize and remove invalid characters
+      // Auto-capitalize, remove invalid characters, and format cell
       uid = uid.toString().toUpperCase().replace(/[^0-9A-F]/g, "");
-      cell.setFontColor("#000000"); // set font to black
       cell.setValue(uid); // overwrite with cleaned UID
-      cell.getColumn() > 1 && cell.setBackground(cell.offset(0, -1).getBackground()); // Update cell color to match row
+      normalizeCell(cell, true);
 
       // Validate 16-character hex UID
       if (!/^[0-9A-F]{16}$/.test(uid)) {
@@ -291,8 +284,6 @@ function handleSavantUidEdit_(e) {
         continue;
       }
 
-      // cell.setBackground(null);
-
       // Take first 12 chars for MAC
       const macHex = uid.substring(0, 12);
       const octets = macHex.match(/.{2}/g);
@@ -300,13 +291,11 @@ function handleSavantUidEdit_(e) {
 
       const formattedMac = octets.join(":");
 
-      // Write formatted MAC to MAC Address column in same row and change color of the cell
+      // Write formatted MAC to MAC Address column in same row and format cell
       const macCell = sheet.getRange(range.getRow() + r, macCol);
 
-      macCell.setFontColor("#000000");
       macCell.setValue(formattedMac);
-      macCell.getColumn() > 1 &&
-      macCell.setBackground(macCell.offset(0, -1).getBackground());
+      normalizeCell(macCell, true);
 
     }
   }
@@ -319,6 +308,23 @@ function clearCellAndMatchRow_(cell) {
   cell.setValue("");
   cell.getColumn() > 1 &&
     cell.setBackground(cell.offset(0, -1).getBackground());
+}
+
+// ================== CELL FORMATTER ==================
+
+// Used by MAC and UID functions to ensure font size, color, style, etc of the cell are correct after the new formatted input is entered
+function normalizeCell(cell, copyBgFromLeft = false) {
+  cell
+    .setFontFamily('Arial')
+    .setFontSize(10)
+    .setFontColor('#000000')
+    .setFontWeight('normal')
+    .setFontStyle('normal')
+    .setFontLine('none');
+
+  if (copyBgFromLeft && cell.getColumn() > 1) {
+    cell.setBackground(cell.offset(0, -1).getBackground());
+  }
 }
 
 // ================== DHCP EXPORT MENU HANDLERS ==================
