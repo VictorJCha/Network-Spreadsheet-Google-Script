@@ -179,6 +179,21 @@ function handleMacAddressEdit_(e) {
         continue;
       }
 
+      //Check if Value is NA
+      if (/^(N\/?A)$/i.test(val.toString().trim())) {
+        cell
+          .setValue('N/A')
+          .setFontColor('#999999')
+          .setFontStyle('italic')
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('bottom');
+
+        cell.getColumn() > 1 &&
+          cell.setBackground(cell.offset(0, -1).getBackground());
+
+        continue;
+      }
+
       // Normalize: uppercase and remove all separators/spaces
       val = val.toString().toUpperCase().replace(/[:\-\.\s]/g, "");
 
@@ -261,6 +276,21 @@ function handleSavantUidEdit_(e) {
 
         // Clear MAC partner cell
         clearCellAndMatchRow_(sheet.getRange(cell.getRow(), macCol));
+
+        continue;
+      }
+
+      //Check if Value is NA
+      if (/^(N\/?A)$/i.test(uid.toString().trim())) {
+        cell
+          .setValue('N/A')
+          .setFontColor('#999999')
+          .setFontStyle('italic')
+          .setHorizontalAlignment('center')
+          .setVerticalAlignment('bottom');
+
+        cell.getColumn() > 1 &&
+          cell.setBackground(cell.offset(0, -1).getBackground());
 
         continue;
       }
