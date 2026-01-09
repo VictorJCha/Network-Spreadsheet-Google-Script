@@ -256,8 +256,12 @@ function handleSavantUidEdit_(e) {
 
   const uidCol = headers.findIndex(h => h.toString().toLowerCase().includes("savant uid")) + 1;
   const macCol = headers.indexOf("MAC Address") + 1;
+  const ovrcCol = headers.findIndex(h =>h.toString().toLowerCase().includes('ovrc')) + 1;
+
 
   if (uidCol < 1 || macCol < 1) return; // required columns missing
+
+  if (ovrcCol < 1) return; // OVRC column missing
 
   // Only process edits in the Savant UID column
   if (range.getColumn() !== uidCol) return;
@@ -321,6 +325,18 @@ function handleSavantUidEdit_(e) {
 
       const formattedMac = octets.join(":");
 
+      // Check OVRC column value in the same row
+      const ovrcValue = sheet
+        .getRange(cell.getRow(), ovrcCol)
+        .getValue()
+        .toString()
+        .toLowerCase();
+
+      // Skip MAC write if OVRC contains "savant host"
+      if (/savant.*host/i.test(ovrcValue)) {
+        continue;
+      }
+
       // Write formatted MAC to MAC Address column in same row and format cell
       const macCell = sheet.getRange(range.getRow() + r, macCol);
 
@@ -349,6 +365,7 @@ function normalizeCell(cell, copyBgFromLeft = false) {
     .setFontSize(10)
     .setFontColor('#000000')
     .setFontWeight('normal')
+    .setHorizontalAlignment('left')
     .setFontStyle('normal')
     .setFontLine('none');
 
