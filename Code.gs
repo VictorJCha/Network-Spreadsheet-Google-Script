@@ -180,9 +180,9 @@ function handleMacAddressEdit_(e) {
       }
 
       //Check if Value is NA
-      if (/^(N\/?A)$/i.test(val.toString().trim())) {
+      if (/^[\[\(<]?\s*N\/?A\s*[\]\)>]?$/i.test(val.toString().trim())) {
         cell
-          .setValue('N/A')
+          .setValue('<N/A>')
           .setFontColor('#999999')
           .setFontStyle('italic')
           .setHorizontalAlignment('center')
@@ -285,9 +285,9 @@ function handleSavantUidEdit_(e) {
       }
 
       //Check if Value is NA
-      if (/^(N\/?A)$/i.test(uid.toString().trim())) {
+      if (/^[\[\(<]?\s*N\/?A\s*[\]\)>]?$/i.test(uid.toString().trim())) {
         cell
-          .setValue('N/A')
+          .setValue('<N/A>')
           .setFontColor('#999999')
           .setFontStyle('italic')
           .setHorizontalAlignment('center')
