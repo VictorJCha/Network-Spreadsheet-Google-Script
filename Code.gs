@@ -395,28 +395,34 @@ function exportDhcpAllVlans() {
 /**
  * Build filename based on VLAN key.
  * Patterns:
- *  Management   -> Unifi_Mgmt_VLAN_DHCP_<timestamp>.csv
- *  AV           -> Unifi_AV_VLAN_DHCP_<timestamp>.csv
- *  Surveillance -> Unifi_Surveillance_VLAN_DHCP_<timestamp>.csv
- *  ALL          -> Unifi_All_VLAN_DHCP_<timestamp>.csv
+ *  Management   -> Site_Name_Unifi_Mgmt_VLAN_DHCP_<timestamp>.csv
+ *  AV           -> Site_Name_Unifi_AV_VLAN_DHCP_<timestamp>.csv
+ *  Surveillance -> Site_Name_Unifi_Surveillance_VLAN_DHCP_<timestamp>.csv
+ *  ALL          -> Site_Name_Unifi_All_VLAN_DHCP_<timestamp>.csv
  */
 function buildDhcpFilename_(vlanKey) {
-  let prefix;
+  let basePrefix;
+
   switch (vlanKey) {
     case 'Management':
-      prefix = 'Unifi_Mgmt_VLAN_DHCP_';
+      basePrefix = 'Unifi_Mgmt_VLAN_DHCP_';
       break;
     case 'AV':
-      prefix = 'Unifi_AV_VLAN_DHCP_';
+      basePrefix = 'Unifi_AV_VLAN_DHCP_';
       break;
     case 'Surveillance':
-      prefix = 'Unifi_Surveillance_VLAN_DHCP_';
+      basePrefix = 'Unifi_Surveillance_VLAN_DHCP_';
       break;
     case 'ALL':
     default:
-      prefix = 'Unifi_All_VLAN_DHCP_';
+      basePrefix = 'Unifi_All_VLAN_DHCP_';
       break;
   }
+
+  const siteName = getSiteNameFromFile_();
+  const prefix = siteName
+    ? `${siteName}_${basePrefix}`
+    : basePrefix;
 
   const timestamp = Utilities.formatDate(
     new Date(),
@@ -479,6 +485,25 @@ function exportDhcpForVlan_(vlanKey) {
 }
 
 // ================== DHCP DATA GATHERING ==================
+function getSiteNameFromFile_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const fileName = ss.getName(); // e.g. "Project 123 Network Info - Avocado [401]"
+
+  // Match everything after "Network Info -"
+  const match = fileName.match(/Network Info\s*-\s*(.+)$/i);
+  if (!match) return null;
+
+  // Extract site portion
+  let siteName = match[1].trim(); // "Avocado [401]"
+
+  // Remove characters not allowed in filenames and square brackets: \ / : * ? " < > | []
+  siteName = siteName.replace(/[\\\/:*?"<>[\]]/g, '');
+
+  // Replace spaces with underscores
+  siteName = siteName.replace(/\s+/g, '_');
+
+  return siteName; // "Avocado_401"
+}
 
 function getSheetNameForVlanKey_(vlanKey) {
   switch (vlanKey) {
