@@ -18,7 +18,7 @@ const CSV_COMPARISON_HEADERS = [
  'MAC Address',
  'IP',
  'OVRC Name',
- 'NSS'
+ 'VLAN'
 ];
 
 // Optional default expiration to match your template
@@ -34,8 +34,8 @@ function onOpen(e) {
   // ----- Custom Tools menu -----
 ui.createMenu('Cantara Tools')
   .addItem('Create Password', 'openPasswordGenerator')
-  //.addSeparator()
-  //.addItem('Export For CSV Comparison', 'exportForCsvComparison')
+  .addSeparator()
+  .addItem('Export For CSV Comparison', 'exportForCsvComparison')
   .addSeparator()
   .addSubMenu(
     ui.createMenu('Export DHCP Reservations')
@@ -398,8 +398,7 @@ function buildCsvComparisonFilename_() {
 
 function exportForCsvComparison() {
   const vlanKey = 'ALL';
-  const records = getDhcpRecordsForVlan_(vlanKey, true); // include all devices, even Ubiquiti
-
+  const records = getDhcpRecordsForVlan_('ALL', true); // include Ubiquiti
   if (!records || records.length === 0) return;
 
   // Build CSV rows in the same order as CSV_COMPARISON_HEADERS
@@ -407,7 +406,7 @@ function exportForCsvComparison() {
     rec.mac || '',
     rec.ip || '',
     rec.name || '',
-    rec.NSS || ''
+    rec.vlan || ''
   ]);
 
   const allRows = [CSV_COMPARISON_HEADERS].concat(dataRows);
@@ -422,68 +421,6 @@ function exportForCsvComparison() {
 
   const filename = buildCsvComparisonFilename_(); // build similarly to DHCP export
   showCsvDownloadDialog_(filename, csvContent);
-}
-
-function getDhcpRecordsForCsvComparison_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const keys = ['Management', 'AV', 'Surveillance'];
-  const records = [];
-  const skipped = [];
-
-  keys.forEach(function (key) {
-    const sheetName = getSheetNameForVlanKey_(key);
-    if (!sheetName) return;
-
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) return;
-
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    if (lastRow < 2 || lastCol === 0) return;
-
-    const values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
-    const headers = values[0];
-
-    const macColIdx  = headers.indexOf('MAC Address');
-    const nameColIdx = headers.indexOf('OVRC Name');
-    const ipColIdx   = headers.indexOf('IP');
-
-    if (macColIdx === -1 || nameColIdx === -1 || ipColIdx === -1) return;
-
-    for (let r = 1; r < values.length; r++) {
-      const row  = values[r];
-      const mac  = row[macColIdx];
-      const name = row[nameColIdx];
-      const ip   = row[ipColIdx];
-      let reason = null;
-
-      if (!mac)      reason = 'Missing MAC Address';
-      else if (!ip)  reason = 'Missing IP Address';
-      else if (!name) reason = 'Missing OVRC Name';
-
-      if (reason) {
-        skipped.push({ sheet: sheetName, row: r + 1, reason });
-        continue;
-      }
-
-      records.push({
-        mac:  mac,
-        ip:   ip,
-        name: name,
-        vlan: key
-      });
-    }
-  });
-
-  // Optionally toast skipped rows
-  if (skipped.length > 0) {
-    const summary = skipped
-      .slice(0, 5)
-      .map(s => `${s.sheet} R${s.row}: ${s.reason}`)
-      .join(' | ');
-    const moreText = skipped.length > 5 ? ` ...and ${skipped.length - 5} more` : '';
-    SpreadsheetApp.getActive().toast(`Some rows were skipped: ${summary}${moreText}`, 'CSV Comparison Warning', 10);
-  }
 
   return records;
 }
@@ -627,11 +564,12 @@ function getSheetNameForVlanKey_(vlanKey) {
       return 'AV VLAN 5';
     case 'Surveillance':
       return 'Surveillance VLAN 7';
+    case 'AVoIP':
+      return 'AVoIP VLAN 10'; // only exists on some sites
     default:
       return null;
   }
 }
-
 
 /**
  * Fetch DHCP data for a given VLAN or all VLANs.
@@ -650,13 +588,14 @@ function getSheetNameForVlanKey_(vlanKey) {
  *   - Skip row if OVRC Name is missing
  *   - Toast a warning summarizing skipped rows + reasons
  */
-function getDhcpRecordsForVlan_(vlanKey) {
+function getDhcpRecordsForVlan_(vlanKey, includeUbiquiti = false) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ui = SpreadsheetApp.getUi();
 
-  const keys = (vlanKey === 'ALL')
-    ? ['Management', 'AV', 'Surveillance']
-    : [vlanKey];
+    const keys = (vlanKey === 'ALL')
+      ? ['Management', 'AV', 'Surveillance', 'AVoIP']
+      : [vlanKey];
+
 
   const records = [];
   const skipped = []; // collect skipped rows + reasons
@@ -720,7 +659,8 @@ function getDhcpRecordsForVlan_(vlanKey) {
       let reason = null;
 
       // Extra rule: on Management VLAN 1, skip Ubiquiti-manufactured devices
-      if (manufacturerFilterEnabled) {
+      // unless explicitly allowed (CSV comparison export)
+      if (manufacturerFilterEnabled && !includeUbiquiti) {
         const manufacturer = row[manufacturerColIdx];
         if (manufacturer === 'Ubiquiti') {
           reason = 'Ubiquiti manufacturer (handled separately)';
