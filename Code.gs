@@ -398,7 +398,7 @@ function buildCsvComparisonFilename_() {
 
 function exportForCsvComparison() {
   const vlanKey = 'ALL';
-  const records = getDhcpRecordsForVlan_('ALL', true); // include Ubiquiti
+  const records = getDhcpRecordsForVlan_('ALL', true); // Filter for Ubiquiti Devices
   if (!records || records.length === 0) return;
 
   // Build CSV rows in the same order as CSV_COMPARISON_HEADERS
@@ -662,7 +662,7 @@ function getDhcpRecordsForVlan_(vlanKey, includeUbiquiti = false) {
       // unless explicitly allowed (CSV comparison export)
       if (manufacturerFilterEnabled && !includeUbiquiti) {
         const manufacturer = row[manufacturerColIdx];
-        if (manufacturer === 'Ubiquiti') {
+        if (manufacturer === 'Ubiquiti' && !includeUbiquiti) {
           reason = 'Ubiquiti manufacturer (handled separately)';
         }
       }
